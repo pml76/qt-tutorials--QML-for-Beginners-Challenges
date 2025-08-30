@@ -127,6 +127,96 @@ Window {
         }
     }
 
+    component KeyButton: Button {
+        // A button whose width is calculated especially to
+        // ensure four of these buttons will fit in a row.
+        // (window.width - margin either side (20),
+        // minus 3 * spacing (4) / numButtons (4) = 47
+        width: 47
+        height: 40
+    }
+
+    component DoubleButton: DoubleBorderGradient {
+        id: doubleButton
+
+        // A new kind of button with two click areas
+        // with upClicked and downClicked signals, respectively.
+        // It also supports two separate up and down images.
+
+        signal upClicked
+        signal downClicked
+
+        readonly property alias upPressed: upMouseArea.pressed
+        readonly property alias downPressed: downMouseArea.pressed
+
+        property alias upImageSource: upImage.source
+        property alias downImageSource: downImage.source
+
+        height: 100
+        width: 50
+        radius: Math.min(height, width) / 2
+
+        color: upPressed || downPressed ? window.themeColor : window.themeColor.darker()
+        color2: upPressed || downPressed ? window.themeColor.darker() : window.themeColor
+
+        MouseArea {
+            id: upMouseArea
+
+            anchors {
+                top: parent.top
+                left: parent.left
+                right: parent.right
+                bottom: parent.verticalCenter
+            }
+
+            onClicked: doubleButton.upClicked()
+        }
+
+        MouseArea {
+            id: downMouseArea
+
+            anchors {
+                top: parent.verticalCenter
+                left: parent.left
+                right: parent.right
+                bottom: parent.bottom
+            }
+
+            onClicked: doubleButton.downClicked()
+        }
+
+        Image {
+            id: upImage
+
+            anchors {
+                horizontalCenter: parent.horizontalCenter
+                top: parent.top
+                topMargin: 20
+            }
+            width: 32
+            height: 32
+            fillMode: Image.PreserveAspectFit
+        }
+
+        Image {
+            id: downImage
+
+            anchors {
+                horizontalCenter: parent.horizontalCenter
+                bottom: parent.bottom
+                bottomMargin: 20
+            }
+            width: 32
+            height: 32
+            fillMode: Image.PreserveAspectFit
+        }
+    }
+
+    FontLoader {
+        id: silkScreenFont
+        source: Qt.resolvedUrl("fonts/Silkscreen/Silkscreen-Regular.ttf")
+    }
+
     component CircleButton: Button {
         id: circleButton
 
@@ -145,6 +235,33 @@ Window {
                 return (Math.pow(clickPoint.x - circleButton.radius, 2) +
                         Math.pow(clickPoint.y - circleButton.radius, 2))
                         < Math.pow(circleButton.radius, 2)
+            }
+        }
+    }
+
+    component CircleSegmentButton: Button {
+        id: circleSegmentButton
+
+        width: 200
+        height: width
+
+        property real innerRadius: 50
+
+        containmentMask: QtObject {
+            function contains(clickPoint: point) : bool {
+                let angle = (-Math.atan2(clickPoint.x, clickPoint.y) / Math.PI * 180.0)
+                let b =  (Math.pow(clickPoint.x - circleSegmentButton.radius, 2) +
+                          Math.pow(clickPoint.y - circleSegmentButton.radius, 2))
+                          >= Math.pow(circleSegmentButton.innerRadius, 2)
+
+
+                console.log("angle: ", angle, "  b: ", b)
+
+                return (Math.pow(clickPoint.x - circleSegmentButton.radius, 2) +
+                        Math.pow(clickPoint.y - circleSegmentButton.radius, 2))
+                        < Math.pow(circleSegmentButton.radius, 2) && b
+
+
             }
         }
     }
@@ -220,5 +337,519 @@ Window {
         color: "darkred"
 
         onClicked: window.close()
+
+        Image {
+            anchors.centerIn: parent
+            width: 20
+            height: 20
+            fillMode: Image.PreserveAspectFit
+            source: "images/power.svg"
+        }
+    }
+
+    DoubleBorderGradient {
+        id: lcdScreen
+
+        anchors {
+            top: powerButton.bottom
+            left: parent.left
+            right: parent.right
+            margins: 20
+        }
+
+        height: 100
+        radius: 8
+        color: "#93AA4B"
+
+        innerMargin: 1
+
+        Item {
+            id: lcdContentItem
+
+            anchors {
+                fill: parent
+                margins: 10
+            }
+
+            opacity: 0.5
+
+            Rectangle {
+                id: volumeIndicator
+
+                anchors {
+                    top: parent.top
+                    bottom: parent.bottom
+                    right: parent.right
+                }
+
+                width: 12
+
+                color: "transparent"
+                border {
+                    color: "black"
+                    width: 2
+                }
+
+                Rectangle {
+                    id: volumeValue
+
+                    anchors.bottom: parent.bottom
+                    color: "black"
+                    width: volumeIndicator.width
+                    height: volumeIndicator.height * tvControl.volume
+
+                    opacity: tvControl.muted ? 0.5 : 1
+                }
+            }
+        }
+
+        Text {
+            id: channelNumberText
+
+            anchors {
+                top: parent.top
+                topMargin: -8
+                left: parent.left
+
+                right: volumeIndicator.left
+                rightMargin: 4
+            }
+
+            font {
+                family: silkScreenFont.font.family
+                pixelSize: 20
+            }
+
+            text: tvControl.channelNumberString
+            color: "black"
+        }
+
+        Text {
+            id: channelName
+
+            anchors {
+                top: channelNumberText.bottom
+                left: parent.left
+                right: volumeIndicator.left
+                rightMargin: 4
+            }
+
+            font {
+                family: silkScreenFont.font.family
+                pixelSize: 20
+            }
+
+            text: tvControl.channelName
+            color: "black"
+        }
+
+        Image {
+            id: closedCaptionsIcon
+
+            anchors {
+                bottom: parent.bottom
+                left: parent.left
+            }
+
+            width: 32
+            height: 32
+
+            visible: tvControl.closedCaptionsEnabled
+            source: Qt.resolvedUrl("images/closed_caption.svg")
+
+            fillMode: Image.PreserveAspectFit
+        }
+
+        Image {
+            id: hdrEnabledIcon
+
+            anchors {
+                bottom: parent.bottom
+                left: closedCaptionsIcon.right
+                leftMargin: 2
+            }
+
+            width: 32
+            height: 32
+
+            visible: tvControl.hdrEnabled
+            source: Qt.resolvedUrl("images/hdr_on.svg")
+
+            fillMode: Image.PreserveAspectFit
+        }
+
+        Image {
+            id: castConnectedIcon
+
+            anchors {
+                bottom: parent.bottom
+                left: hdrEnabledIcon.right
+                leftMargin: 2
+            }
+
+            width: 32
+            height: 32
+
+            visible: tvControl.castConnected
+            source: Qt.resolvedUrl("images/cast_connected.svg")
+
+            fillMode: Image.PreserveAspectFit
+        }
+
+        Image {
+            id: listeningIcon
+
+            anchors {
+                bottom: parent.bottom
+                left: castConnectedIcon.right
+                leftMargin: 2
+            }
+
+            width: 32
+            height: 32
+
+            visible: false
+            source: Qt.resolvedUrl("images/mic.svg")
+
+            fillMode: Image.PreserveAspectFit
+
+            Timer {
+                interval: 500
+                repeat: true
+                running: tvControl.listening
+                onTriggered: listeningIcon.visible = !listeningIcon.visible
+                triggeredOnStart: true
+                onRunningChanged: if(!running) listeningIcon.visible = false
+            }
+        }
+
+        Image {
+            id: mutedIcon
+
+            anchors {
+                bottom: parent.bottom
+                left: listeningIcon.right
+                leftMargin: 2
+            }
+
+            width: 32
+            height: 32
+
+            visible: true
+            source: Qt.resolvedUrl(`images/speaker${tvControl.soundOn ? "" : "_muted"}.svg`)
+
+            fillMode: Image.PreserveAspectFit
+        }
+    }
+
+    Item {
+        id: featureButtons
+
+        anchors {
+            top: lcdScreen.bottom
+            topMargin: 20
+            left: parent.left
+            right: parent.right
+            leftMargin: 20
+            rightMargin: 20
+        }
+        height: 40
+
+        KeyButton {
+            id: ccButton
+
+            anchors {
+                top: parent.top
+                left: parent.left
+            }
+
+            onClicked: tvControl.closedCaptionsEnabled = !tvControl.closedCaptionsEnabled
+
+            Image {
+                anchors.centerIn: parent
+                width: 24
+                height: 24
+                source: Qt.resolvedUrl("images/closed_caption_white.svg")
+                fillMode: Image.PreserveAspectFit
+            }
+        }
+
+        KeyButton {
+            id: hdrButton
+
+            anchors {
+                top: parent.top
+                left: ccButton.right
+                leftMargin: 4
+            }
+
+            onClicked: tvControl.hdrEnabled = !tvControl.hdrEnabled
+
+            Image {
+                anchors.centerIn: parent
+                width: 24
+                height: 24
+                source: Qt.resolvedUrl("images/hdr_on_white.svg")
+                fillMode: Image.PreserveAspectFit
+            }
+        }
+
+        KeyButton {
+            id: castButton
+
+            anchors {
+                top: parent.top
+                left: hdrButton.right
+                leftMargin: 4
+            }
+
+            onClicked: tvControl.castConnected = !tvControl.castConnected
+
+            Image {
+                anchors.centerIn: parent
+                width: 24
+                height: 24
+                source: Qt.resolvedUrl("images/cast_white.svg")
+                fillMode: Image.PreserveAspectFit
+            }
+        }
+
+        KeyButton {
+            id: muteButton
+
+            anchors {
+                top: parent.top
+                left: castButton.right
+                leftMargin: 4
+            }
+
+            onClicked: tvControl.muted = !tvControl.muted
+
+            Image {
+                anchors.centerIn: parent
+                width: 24
+                height: 24
+                source: Qt.resolvedUrl("images/speaker_muted_white.svg")
+                fillMode: Image.PreserveAspectFit
+            }
+        }
+    }
+
+    Item {
+        id: dpad
+
+        anchors {
+            top: featureButtons.bottom
+            topMargin: 20
+            horizontalCenter: parent.horizontalCenter
+        }
+
+        width: 200
+        height: 200
+
+        Item {
+            id: rotatedButtons
+
+            anchors.fill: parent
+
+            rotation: 45
+
+
+            Item {
+                id: topButton
+
+                width: 100
+                height: 100
+
+                anchors {
+                    left: parent.left
+                    top: parent.top
+                }
+
+                clip: true
+
+                CircleButton {
+                    rotation: -45
+
+                    Image {
+                        anchors {
+                            top: parent.top
+                            topMargin: 10
+                            horizontalCenter: parent.horizontalCenter
+                        }
+                        width: 32
+                        height: 32
+                        source: Qt.resolvedUrl("images/settings.svg")
+                        fillMode: Image.PreserveAspectFit
+                    }
+                }
+            }
+
+            Item {
+                id: leftButton
+
+                width: 100
+                height: 100
+
+                anchors {
+                    right: parent.right
+                    top: parent.top
+                }
+
+                clip: true
+
+                CircleButton {
+                    anchors.horizontalCenter: parent.left
+                    rotation: -45
+
+                    Image {
+                        anchors {
+                            right: parent.right
+                            rightMargin: 10
+                            verticalCenter: parent.verticalCenter
+                        }
+                        width: 32
+                        height: 32
+                        source: Qt.resolvedUrl("images/fast_forward.svg")
+                        fillMode: Image.PreserveAspectFit
+                    }
+                }
+            }
+
+            Item {
+                id: rightButton
+
+                width: 100
+                height: 100
+
+                anchors {
+                    left: parent.left
+                    bottom: parent.bottom
+                }
+
+                clip: true
+
+                CircleButton {
+                    anchors.verticalCenter: parent.top
+                    rotation: -45
+
+                    Image {
+                        anchors {
+                            left: parent.left
+                            leftMargin: 10
+                            verticalCenter: parent.verticalCenter
+                        }
+                        width: 32
+                        height: 32
+                        source: Qt.resolvedUrl("images/fast_rewind.svg")
+                        fillMode: Image.PreserveAspectFit
+                    }
+                }
+            }
+
+            Item {
+                id: bottomButton
+
+                width: 100
+                height: 100
+
+                anchors {
+                    right: parent.right
+                    bottom: parent.bottom
+                }
+
+                clip: true
+
+                CircleButton {
+                    anchors {
+                        horizontalCenter: parent.left
+                        verticalCenter: parent.top
+                    }
+                    rotation: -45
+
+                    Image {
+                        anchors {
+                            bottom: parent.bottom
+                            bottomMargin: 10
+                            horizontalCenter: parent.horizontalCenter
+                        }
+                        width: 32
+                        height: 32
+                        source: Qt.resolvedUrl("images/play_pause.svg")
+                        fillMode: Image.PreserveAspectFit
+                    }
+                }
+            }
+
+            Rectangle {
+                // a horizontal line (rotated by 45 degrees)
+
+                //visible: false
+
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                    margins: 2
+                }
+
+                height: 2
+                color: window.themeColor
+                opacity: 0.5
+
+                Rectangle {
+                    y: 1
+                    width: parent.width
+                    height: 2
+                    color: window.themeColor.darker()
+                }
+            }
+
+            Rectangle {
+                // a vertical line (rotated by 45 degrees)
+
+                //visible: false
+
+                anchors {
+                    top: parent.top
+                    bottom: parent.bottom
+                    horizontalCenter: parent.horizontalCenter
+                    margins: 2
+                }
+                width: 2
+                color: window.themeColor
+                opacity: 0.5
+
+                Rectangle {
+                    x: -1
+                    height: parent.height
+                    width: 2
+                    color: window.themeColor.darker()
+                }
+            }
+
+            CircleButton {
+                id: centerButton
+
+                anchors.centerIn: parent
+
+                width: 100
+                height: 100
+
+                onClicked: tvControl.listening = !tvControl.listening
+
+                rotation: -45
+
+                Image {
+                    anchors.centerIn: parent
+
+                    width: 48
+                    height: 48
+                    source: Qt.resolvedUrl("images/mic_white.svg")
+                    fillMode: Image.PreserveAspectFit
+                }
+            }
+
+        }
     }
 }
