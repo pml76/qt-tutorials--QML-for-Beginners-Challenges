@@ -152,7 +152,7 @@ Window {
         property alias upImageSource: upImage.source
         property alias downImageSource: downImage.source
 
-        height: 100
+        height: 150
         width: 50
         radius: Math.min(height, width) / 2
 
@@ -276,6 +276,7 @@ Window {
 
         property int channelNumber: 0
         readonly property string channelName: channelNames[channelNumber]
+        readonly property string channelNumberString: ("Channel: " + (channelNumber + 1))
 
         // TV Features
         property bool closedCaptionsEnabled: true
@@ -408,8 +409,9 @@ Window {
 
             anchors {
                 top: parent.top
-                topMargin: -8
+                topMargin: 2
                 left: parent.left
+                leftMargin: 4
 
                 right: volumeIndicator.left
                 rightMargin: 4
@@ -430,13 +432,14 @@ Window {
             anchors {
                 top: channelNumberText.bottom
                 left: parent.left
+                leftMargin: 4
                 right: volumeIndicator.left
                 rightMargin: 4
             }
 
             font {
                 family: silkScreenFont.font.family
-                pixelSize: 20
+                pixelSize: 14
             }
 
             text: tvControl.channelName
@@ -849,7 +852,41 @@ Window {
                     fillMode: Image.PreserveAspectFit
                 }
             }
-
         }
     }
+
+    DoubleButton {
+        id: channelButton
+
+        anchors {
+            top: dpad.bottom
+            topMargin: 20
+            left: parent.left
+            leftMargin: 44
+        }
+
+        onUpClicked: tvControl.incrementChannel()
+        onDownClicked: tvControl.decrementChannel()
+
+        upImageSource: Qt.resolvedUrl("images/plus.svg")
+        downImageSource: Qt.resolvedUrl("images/minus.svg")
+    }
+
+    DoubleButton {
+        id: volumeButton
+
+        anchors {
+            top: dpad.bottom
+            topMargin: 20
+            right: parent.right
+            rightMargin: 44
+        }
+
+        onUpClicked: tvControl.incrementVolume()
+        onDownClicked: tvControl.decrementVolume()
+
+        upImageSource: Qt.resolvedUrl("images/volume_up.svg")
+        downImageSource: Qt.resolvedUrl("images/volume_down.svg")
+    }
+
 }
